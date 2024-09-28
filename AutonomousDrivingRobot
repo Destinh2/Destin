@@ -1,0 +1,114 @@
+int ml = 8;  //left motor
+int mr = 7;  //right motor
+int STBY = 3;
+int ENA = 5;  //left motor speed
+int ENB = 6;  //right motor speed
+
+int sensor_pin_right = A0;  //Right sensor
+int sensor_pin_middle = A1;
+int sensor_pin_left = A2;  //Left sensor
+
+int threshold_value_right = 775;
+int threshold_value_middle = 700;
+int threshold_value_left = 775;
+
+int mlspeed = 70;
+int mrspeed = 66;
+
+int sensor_value_right, sensor_value_middle, sensor_value_left;
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(ml, OUTPUT);
+  pinMode(mr, OUTPUT);
+  pinMode(STBY, OUTPUT);
+  pinMode(ENA, OUTPUT);
+  pinMode(ENB, OUTPUT);
+  digitalWrite(STBY, HIGH);
+  analogWrite(ENA, mlspeed);
+  analogWrite(ENB, mrspeed);
+  pinMode(sensor_pin_right, INPUT);
+  pinMode(sensor_pin_middle, INPUT);
+  pinMode(sensor_pin_left, INPUT);
+}
+
+void loop() {
+
+  readSensors();
+
+  Serial.println(sensor_value_right);
+  Serial.print("RIGHT SENSOR VALUE: ");
+
+  Serial.println(sensor_value_middle);
+  Serial.print("MIDDLE SENSOR VALUE: ");
+
+  Serial.println(sensor_value_left);
+  Serial.print("LEFT SENSOR VALUE: ");
+  
+  if ((sensor_value_right >= threshold_value_right) && (sensor_value_left >= threshold_value_left) && (sensor_value_middle >= threshold_value_middle)) { //when a node is detected, stop
+    Serial.println("Node Detected");
+    fwd(115);
+    left(500); //turn left 90 degrees
+    readSensors();
+
+    while (sensor_value_middle <= threshold_value_middle) { //if no line is found, turn right until the middle sensor detects the line
+      right(10);
+      readSensors();
+    }
+  }
+
+  else if (sensor_value_middle >= threshold_value_middle) { //go fwd
+    fwd(15);
+    readSensors();
+  }   
+  else if (sensor_value_left >= threshold_value_left) { //adjust left 
+    left(15);
+    readSensors();
+  }
+  else if (sensor_value_right >= threshold_value_right) { //adjust right
+    right(15);
+    readSensors();
+  }
+
+  else if ((sensor_value_right <= threshold_value_right) && (sensor_value_left <= threshold_value_left) && (sensor_value_middle <= threshold_value_middle)) { //if all sensors detect white
+    right(500); //turn left 90 degrees
+    readSensors();
+    while (sensor_value_middle <= threshold_value_middle) { //if no line is found, turn right until the middle sensor detects the line
+      left(10);
+      readSensors();
+    }
+  }
+}
+
+void fwd(int time) {
+  digitalWrite(ml, LOW);
+  digitalWrite(mr, LOW);
+  delay(time);
+}
+
+
+void bwd(int time) {
+  digitalWrite(ml, HIGH);
+  digitalWrite(mr, HIGH);
+  delay(time);
+}
+
+
+void left(int time) {
+  digitalWrite(ml, LOW);
+  digitalWrite(mr, HIGH);
+  delay(time);
+}
+
+
+void right(int time) {
+  digitalWrite(ml, HIGH);
+  digitalWrite(mr, LOW);
+  delay(time);
+}
+
+void readSensors() {
+  sensor_value_right = analogRead(sensor_pin_right);
+  sensor_value_middle = analogRead(sensor_pin_middle);
+  sensor_value_left = analogRead(sensor_pin_left);
+}
